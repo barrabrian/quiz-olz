@@ -17,7 +17,10 @@ export const Route = createFileRoute("/quiz-airbnb")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" },
     ],
+    links: [{ rel: "stylesheet", href: "/quiz-mobile.css" }],
+    scripts: [{ src: "/quiz-fit.js" }],
   }),
   component: QuizPage,
 });
@@ -27,7 +30,8 @@ function QuizPage() {
     <iframe
       src="/quiz-airbnb.html"
       title="Quiz Design para Airbnb"
-      className="h-screen w-full border-0"
+      className="w-full border-0"
+      style={{ height: "100svh", maxHeight: "100dvh" }}
     />
   );
 }
