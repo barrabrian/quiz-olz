@@ -1,0 +1,33 @@
+:root {
+  --app-h: 100svh;
+  --dock-safe: env(safe-area-inset-bottom, 0px);
+}
+html, body {
+  height: var(--app-h) !important;
+  max-height: var(--app-h);
+  overflow: hidden;
+}
+body { -webkit-text-size-adjust: 100%; }
+.wrap {
+  height: var(--app-h) !important;
+  max-height: var(--app-h) !important;
+}
+.top { padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important; }
+#dock {
+  padding-bottom: max(14px, calc(8px + var(--dock-safe))) !important;
+}
+.screen[data-screen="result"] { padding: 0 !important; }
+body.on-result {
+  height: auto !important;
+  max-height: none !important;
+  overflow: auto !important;
+}
+body.on-result .wrap,
+body.on-result .panel {
+  height: auto !important;
+  max-height: none !important;
+  min-height: var(--app-h) !important;
+}
+@media (min-width: 720px) {
+  .screen[data-screen="result"] { padding-left: 0 !important; padding-right: 0 !important; }
+}
