@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Quiz · Design para Airbnb</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --rausch: #FF385C;
+      --rausch-dark: #E00B41;
+      --ink: #222222;
+      --mute: #6A6A6A;
+      --line: #DDDDDD;
+      --wash: #F7F7F7;
+      --white: #FFFFFF;
+      --shadow: 0 6px 16px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Nunito Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--white);
+      line-height: 1.4;
+    }
+    button, input { font-family: inherit; }
+    img { max-width: 100%; display: block; }
+    .wrap { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .top {
+      flex: none;
+      padding: 12px 20px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--white);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 800; font-size: 15px; letter-spacing: -.02em;
+    }
+    .brand i {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--rausch); color: #fff;
+      display: grid; place-items: center; font-style: normal; font-size: 13px;
+    }
+    .progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .bar { flex: 1; height: 4px; background: #EBEBEB; border-radius: 99px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 99px; transition: width .35s ease; }
+    .progress small { font-size: 12px; color: var(--mute); font-weight: 600; white-space: nowrap; }
+    .top h2 { font-size: clamp(22px, 6vw, 30px); font-weight: 800; letter-spacing: -.03em; margin-top: 12px; line-height: 1.15; }
+    .top .hint { color: var(--mute); font-size: 14px; margin-top: 6px; }
+    .stage { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .screen { display: none; padding: 20px; width: 100%; }
+    .screen.active {
+      display: flex; flex-direction: column; justify-content: safe center; min-height: 100%;
+    }
+    .screen .kicker, .screen h2, .screen > .hint { display: none; }
+    #dock {
+      flex: none; display: flex; gap: 10px;
+      padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line); background: var(--white);
+    }
+    #dock:empty { display: none; }
+    #dock .actions, .screen .actions { display: flex; gap: 10px; width: 100%; }
+    .screen .actions { display: none; }
+    body.on-intro .top, body.on-intro #dock { display: none; }
+    body.on-result { height: auto; overflow: auto; }
+    body.on-result .wrap, body.on-result .panel { height: auto; min-height: 100dvh; overflow: visible; }
+    body.on-result .stage { overflow: visible; flex: none; }
+    body.on-result .top { display: none; }
+    body.on-result #dock { display: none; }
+
+    .intro { text-align: center; max-width: 420px; margin: 0 auto; padding: 24px 0; }
+    .intro .brand { justify-content: center; margin-bottom: 18px; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #FFF0F3; color: var(--rausch-dark);
+      border-radius: 99px; padding: 6px 10px; font-size: 12px; font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .tag svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .intro h2 { display: block !important; font-size: clamp(28px, 7vw, 36px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; }
+    .intro .hint { display: block !important; margin: 12px auto 18px; max-width: 34ch; }
+    .intro-list { text-align: left; display: grid; gap: 10px; margin: 0 auto 24px; max-width: 300px; }
+    .intro-list li { list-style: none; display: flex; gap: 10px; font-size: 14px; color: var(--mute); }
+    .intro-list b {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff;
+      display: grid; place-items: center; font-size: 11px; flex: none;
+    }
+    .intro .actions { display: flex !important; margin-top: 8px; }
+
+    .grid { display: grid; gap: 10px; }
+    .grid.two { grid-template-columns: 1fr; }
+    @media (min-width: 560px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+    .card {
+      border: 1px solid var(--line); background: var(--white);
+      border-radius: 12px; padding: 14px; text-align: left; cursor: pointer;
+      transition: .15s;
+    }
+    .card:hover { border-color: #b0b0b0; }
+    .card.selected { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--wash); }
+    .swatch { display: flex; align-items: center; gap: 12px; }
+    .ico {
+      width: 36px; height: 36px; border-radius: 10px; flex: none;
+      display: grid; place-items: center; background: var(--wash);
+    }
+    .ico svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .card.selected .ico { background: var(--ink); color: #fff; }
+    .card strong { display: block; font-size: 15px; font-weight: 700; }
+    .card .desc { display: block; color: var(--mute); font-size: 13px; margin-top: 2px; }
+
+    .size-box { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+    .size-box label { display: block; font-size: 12px; font-weight: 700; color: var(--mute); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
+    .size-row { display: flex; align-items: center; gap: 10px; }
+    .size-row input[type=number] {
+      flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 16px;
+    }
+    .check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--mute); cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--ink); }
+
+    .budget { text-align: center; padding: 8px 0 4px; }
+    .budget .val { font-size: clamp(36px, 9vw, 48px); font-weight: 800; letter-spacing: -.04em; }
+    .budget .band { color: var(--mute); font-size: 14px; margin-top: 4px; min-height: 20px; }
+    input[type=range] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+      background: #EBEBEB; border-radius: 99px; margin: 22px 0 8px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--white); border: 1px solid #ddd; box-shadow: var(--shadow); cursor: pointer;
+    }
+    input[type=range]:disabled { opacity: .35; }
+    .range-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--mute); }
+
+    .style-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 560px) { .style-grid { grid-template-columns: 1fr 1fr; } }
+    .style {
+      border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+      background: var(--white); cursor: pointer; text-align: left; position: relative;
+    }
+    .style img { width: 100%; height: 140px; object-fit: cover; background: var(--wash); }
+    .style figcaption { padding: 10px 12px 12px; }
+    .style strong { font-size: 15px; }
+    .style em { font-style: normal; color: var(--mute); font-size: 12px; }
+    .style.selected { box-shadow: inset 0 0 0 2px var(--ink); }
+    .style .tick {
+      position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; border-radius: 50%;
+      background: var(--ink); color: #fff; display: none; place-items: center; font-size: 12px;
+    }
+    .style.selected .tick { display: grid; }
+
+    .btn {
+      border: 0; cursor: pointer; border-radius: 10px; padding: 14px 16px;
+      font-size: 15px; font-weight: 700; min-height: 48px;
+    }
+    .btn-primary { background: var(--rausch); color: #fff; flex: 1; }
+    .btn-primary:hover { background: var(--rausch-dark); }
+    .btn-primary:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-ghost { background: var(--white); color: var(--ink); border: 1px solid var(--line); }
+    .whatsapp {
+      display: block; background: var(--rausch); color: #fff; text-decoration: none; text-align: center;
+      border-radius: 10px; padding: 16px; font-weight: 700; font-size: 16px;
+    }
+    .whatsapp:hover { background: var(--rausch-dark); }
+
+    .gate { max-width: 440px; margin: 0 auto; width: 100%; }
+    .gate-preview { position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 16px; }
+    .gate-preview img { width: 100%; height: 150px; object-fit: cover; filter: blur(8px); transform: scale(1.08); }
+    .gate-preview .lock {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; background: rgba(34,34,34,.4);
+      color: #fff; text-align: center;
+    }
+    .gate-preview .lock b { font-size: 20px; font-weight: 800; }
+    .gate-preview .lock span { font-size: 13px; opacity: .9; margin-top: 4px; }
+    .why { display: grid; gap: 8px; margin-bottom: 16px; }
+    .why li { list-style: none; display: flex; gap: 10px; font-size: 13px; color: var(--mute); }
+    .why i { width: 20px; height: 20px; border-radius: 50%; background: #FFF0F3; color: var(--rausch); display: grid; place-items: center; font-size: 11px; font-style: normal; flex: none; }
+    .phone-wrap { display: flex; gap: 8px; }
+    .ddi { border: 1px solid var(--line); border-radius: 10px; padding: 13px 12px; color: var(--mute); font-weight: 700; }
+    input[type=tel] { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; font-size: 16px; }
+    .trust { font-size: 12px; color: var(--mute); margin-top: 8px; }
+    .field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+
+    .hold {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: #FFF0F3; color: var(--rausch-dark);
+      border-radius: 12px; padding: 10px 12px; margin-bottom: 18px;
+      font-size: 13px; font-weight: 700;
+    }
+    .hold b { font-variant-numeric: tabular-nums; font-size: 16px; letter-spacing: .02em; }
+    .steps { display: grid; gap: 12px; }
+    .step {
+      display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;
+    }
+    .step .n {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff;
+      display: grid; place-items: center; font-size: 14px; font-weight: 800;
+    }
+    .step b { display: block; font-size: 15px; }
+    .step p { font-size: 13px; color: var(--mute); margin-top: 3px; }
+    .res-hero { padding: 28px 20px 32px; }
+    .res-hero .kicker { color: var(--rausch); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+    .res-hero h2 { font-size: clamp(26px, 6.5vw, 38px); font-weight: 800; letter-spacing: -.04em; line-height: 1.12; max-width: 20ch; }
+    .res-hero .lead { color: var(--mute); margin: 12px 0 18px; max-width: 42ch; }
+    .vs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 10px;
+    }
+    .listing {
+      border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fff; text-align: left;
+    }
+    .listing.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .listing .shot { position: relative; }
+    .listing img { width: 100%; height: 120px; object-fit: cover; }
+    .listing.off img { filter: grayscale(1) contrast(1.05) brightness(.92); }
+    .listing .badge {
+      position: absolute; left: 8px; top: 8px;
+      background: rgba(34,34,34,.82); color: #fff;
+      font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      border-radius: 99px; padding: 4px 8px;
+    }
+    .listing.on .badge { background: var(--rausch); }
+    .listing .meta { padding: 10px 10px 12px; }
+    .listing .meta strong { display: block; font-size: 13px; font-weight: 800; line-height: 1.25; }
+    .stars { font-size: 12px; margin: 4px 0 2px; }
+    .listing.off .stars { color: var(--mute); }
+    .listing.on .stars { color: var(--ink); }
+    .listing .stars em {
+      font-style: normal; color: var(--rausch); font-weight: 800; margin-left: 4px;
+    }
+    .price { font-size: 14px; font-weight: 800; }
+    .price small { font-weight: 600; color: var(--mute); font-size: 11px; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px; }
+    .kpi { background: var(--wash); border-radius: 10px; padding: 8px 6px 7px; }
+    .listing.on .kpi { background: #FFF0F3; }
+    .kpi strong { display: block; font-size: 13px; font-weight: 800; letter-spacing: -.03em; }
+    .listing.on .kpi strong { color: var(--rausch-dark); }
+    .kpi span { font-size: 10px; color: var(--mute); font-weight: 700; }
+    .listing ul { list-style: none; padding: 0 10px 12px; display: grid; gap: 6px; }
+    .listing li { font-size: 12px; color: var(--mute); display: flex; gap: 6px; align-items: flex-start; line-height: 1.3; }
+    .listing li i { font-style: normal; flex: none; font-weight: 800; }
+    .listing.off li i { color: #bbb; }
+    .listing.on li { color: var(--ink); font-weight: 600; }
+    .listing.on li i { color: var(--rausch); }
+    .packs { display: grid; gap: 10px; margin: 16px 0 18px; }
+    .pack {
+      border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: #fff;
+    }
+    .pack.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+    .pack .lbl { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--rausch); margin-bottom: 4px; }
+    .pack b { display: block; font-size: 16px; }
+    .pack p { font-size: 13px; color: var(--mute); margin-top: 4px; }
+    .cta-note { font-size: 12px; color: var(--mute); text-align: center; margin: 8px 0 0; }
+    .res-card { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-bottom: 16px; }
+    .res-card img { width: 100%; height: 200px; object-fit: cover; }
+    .res-card .body { padding: 14px 16px 16px; }
+    .res-card .tag { margin: 0 0 6px; }
+    .res-card strong { font-size: 22px; font-weight: 800; }
+    .moves { display: grid; gap: 10px; margin: 16px 0 20px; }
+    .moves div { display: flex; gap: 10px; font-size: 14px; }
+    .moves b { width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 11px; flex: none; }
+    .res-block { padding: 28px 20px; }
+    .res-block h3 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .res-block .sub { color: var(--mute); font-size: 14px; margin-bottom: 16px; }
+    .hl-grid { display: grid; gap: 10px; }
+    @media (min-width: 640px) { .hl-grid { grid-template-columns: 1fr 1fr; } .style-grid { grid-template-columns: 1fr 1fr; } }
+    .hl { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .hl .lbl { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); margin-bottom: 4px; }
+    .hl b { display: block; font-size: 15px; }
+    .hl p { font-size: 13px; color: var(--mute); margin-top: 4px; }
+    .proof { background: var(--wash); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; text-align: center; }
+    .stats div { background: #fff; border-radius: 12px; padding: 12px 6px; }
+    .stats strong { display: block; font-size: 22px; font-weight: 800; }
+    .stats span { font-size: 11px; color: var(--mute); }
+    .quotes { display: grid; gap: 12px; }
+    .quote {
+      background: #fff; border-radius: 16px; padding: 16px;
+      border: 1px solid var(--line);
+    }
+    .quote .mark { font-size: 28px; line-height: 1; color: var(--rausch); font-weight: 800; margin-bottom: 6px; }
+    .quote p { font-size: 15px; color: var(--ink); margin-bottom: 14px; line-height: 1.45; }
+    .who { display: flex; align-items: center; gap: 10px; }
+    .who img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .who b { display: block; font-size: 13px; }
+    .who span { display: block; color: var(--mute); font-size: 12px; }
+    .who .stars { margin: 0; color: var(--ink); font-size: 11px; font-weight: 700; }
+    .redo { display: block; margin: 12px auto 0; background: none; border: 0; color: var(--mute); text-decoration: underline; cursor: pointer; font-size: 13px; }
+    @media (min-width: 720px) {
+      .top, .screen, #dock, .res-hero, .res-block { padding-left: 40px; padding-right: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="panel">
+      <header class="top">
+        <div class="brand"><i>F</i> Forma Stay</div>
+        <div class="progress">
+          <div class="bar"><span id="barFill"></span></div>
+          <small id="stepCount">1 / 7</small>
+        </div>
+        <h2 id="liveTitle">Quantos imóveis você tem no ar?</h2>
+        <p class="hint" id="liveHint">Isso muda se falamos de uma unidade ou de um padrão de marca.</p>
+      </header>
+      <div class="stage">
+
+        <section class="screen active" data-screen="s1">
+          <p class="kicker">Etapa 1 de 7</p>
+          <h2>Quantos imóveis você tem no ar?</h2>
+          <p class="hint">Isso muda se falamos de uma unidade ou de um padrão de marca.</p>
+          <div class="grid" id="qtyGrid"></div>
+          <div class="actions">
+            <button class="btn btn-primary" id="next1" disabled onclick="go('s2')">Continuar</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="s2">
+          <p class="kicker">Etapa 2 de 7</p>
+          <h2>Qual o objetivo agora?</h2>
+          <p class="hint">O projeto segue o que você quer que o anúncio faça.</p>
+          <div class="grid" id="goalGrid"></div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go('s1')">Voltar</button>
+            <button class="btn btn-primary" id="next2" disabled onclick="go('s3')">Continuar</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="s3">
+          <p class="kicker">Etapa 3 de 7</p>
+          <h2>Como é a unidade?</h2>
+          <p class="hint">Tipo e tamanho. Se não souber o m², pode seguir mesmo assim.</p>
+          <div class="grid two" id="typeGrid"></div>
+          <div class="size-box">
+            <label for="sizeM2">Tamanho aproximado</label>
+            <div class="size-row">
+              <input id="sizeM2" type="number" min="10" max="800" value="42" oninput="onSize()" />
+              <span style="font-size:13px;color:var(--mute);font-weight:700">m²</span>
+            </div>
+            <label class="check"><input id="sizeUnknown" type="checkbox" onchange="onSizeUnknown(this)" /> Ainda não sei o m²</label>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go('s2')">Voltar</button>
+            <button class="btn btn-primary" id="next3" disabled onclick="go('s4')">Continuar</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="s4">
+          <p class="kicker">Etapa 4 de 7</p>
+          <h2>O que mais pesa hoje?</h2>
+          <p class="hint">Escolha até 2. É o que o projeto ataca primeiro.</p>
+          <div class="grid" id="painGrid"></div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go('s3')">Voltar</button>
+            <button class="btn btn-primary" id="next4" disabled onclick="go('s5')">Continuar</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="s5">
+          <p class="kicker">Etapa 5 de 7</p>
+          <h2>Quanto pretende investir nesta unidade?</h2>
+          <p class="hint">Recorte para o tipo de projeto — não é um contrato.</p>
+          <div class="budget">
+            <div class="val" id="budgetVal">R$ 20.000</div>
+            <div class="band" id="budgetBand">Styling + peças-chave</div>
+            <input id="budgetRange" type="range" min="1000" max="150000" step="1000" value="20000" oninput="onBudget(this.value)" />
+            <div class="range-ends"><span>R$ 1 mil</span><span>R$ 150 mil+</span></div>
+            <label class="check" style="justify-content:center;margin-top:16px">
+              <input id="budgetUnknown" type="checkbox" onchange="onBudgetUnknown(this)" /> Ainda não defini o orçamento
+            </label>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go('s4')">Voltar</button>
+            <button class="btn btn-primary" id="next5" onclick="go('s6')">Continuar</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="s6">
+          <p class="kicker">Etapa 6 de 7</p>
+          <h2>Qual visual combina com o anúncio?</h2>
+          <p class="hint">Pense na foto de capa — o que o hóspede deve sentir em 2 segundos.</p>
+          <div class="style-grid" id="styleGrid"></div>
+          <div class="actions">
+            <button class="btn btn-ghost" onclick="go('s5')">Voltar</button>
+            <button class="btn btn-primary" id="next6" disabled onclick="showResult()">Ver meu resultado</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="result">
+          <div class="res-hero">
+            <div class="hold">Sua vaga está reservada por <b id="holdClock">10:00</b></div>
+            <p class="kicker">Resultado do quiz</p>
+            <h2 id="resultHeadline">Seu Airbnb rende mais com projeto de interiores</h2>
+            <p class="lead" id="resultLead">Comparativo do anúncio sem projeto versus com design pensado para foto, review e diária.</p>
+
+            <div class="vs">
+              <article class="listing off">
+                <div class="shot">
+                  <img src="https://images.pexels.com/photos/813692/pexels-photo-813692.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Airbnb comum" />
+                  <span class="badge">Airbnb comum</span>
+                </div>
+                <div class="meta">
+                  <strong>Airbnb comum</strong>
+                  <div class="stars">★ 4.62</div>
+                </div>
+                <div class="kpis">
+                  <div class="kpi"><strong>R$ 280</strong><span>diária</span></div>
+                  <div class="kpi"><strong>61%</strong><span>ocupação</span></div>
+                </div>
+                <ul>
+                  <li><i>×</i> Fotos somem na busca</li>
+                  <li><i>×</i> Preço de mercado</li>
+                  <li><i>×</i> Reviews citam desgaste ou não elogiam a qualidade do imóvel</li>
+                </ul>
+              </article>
+              <article class="listing on">
+                <div class="shot">
+                  <img id="compareAfter" src="https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Anúncio com design" />
+                  <span class="badge">Airbnb com design</span>
+                </div>
+                <div class="meta">
+                  <strong id="compareAfterName">Airbnb com design</strong>
+                  <div class="stars">★ 4.94 <em>+0.32 pts</em></div>
+                </div>
+                <div class="kpis">
+                  <div class="kpi"><strong>R$ 340</strong><span>+21% na diária</span></div>
+                  <div class="kpi"><strong>78%</strong><span>+17 pts ocupação</span></div>
+                </div>
+                <ul>
+                  <li><i>✓</i> Fotos que destacam seu anúncio</li>
+                  <li><i>✓</i> Diária que o visual sustenta</li>
+                  <li><i>✓</i> Reviews de conforto e qualidade, que convidam novos hóspedes a escolherem seu imóvel</li>
+                </ul>
+              </article>
+            </div>
+            <p class="trust" style="margin:0 0 18px">Comparativo ilustrativo. Não é garantia de diária, ocupação ou nota.</p>
+
+            <a class="whatsapp wa-link" target="_blank" rel="noopener">Agendar Orçamento no WhatsApp</a>
+            <p class="cta-note">Abrimos o WhatsApp com o resumo do quiz. Resposta em horário comercial.</p>
+          </div>
+          <div class="res-block">
+            <h3>Como funciona o serviço</h3>
+            <p class="sub">Do briefing à foto do anúncio — um único fluxo.</p>
+            <div class="steps">
+              <div class="step"><span class="n">1</span><div><b>Projeto</b><p>Planta, eixo visual e prioridade dos ambientes alinhados ao que o quiz mostrou.</p></div></div>
+              <div class="step"><span class="n">2</span><div><b>Cotação com fornecedores</b><p>Marcenaria, acabamento e peças com preços de quem já executa Airbnb — sem você caçar orçamento.</p></div></div>
+              <div class="step"><span class="n">3</span><div><b>Execução</b><p>Obra e styling com cronograma curto, pensado para a unidade voltar ao ar.</p></div></div>
+              <div class="step"><span class="n">4</span><div><b>Fotos para o anúncio</b><p>Ensaio das fotos e dos ambientes que o hóspede vê na busca.</p></div></div>
+            </div>
+          </div>
+          <div class="res-block">
+            <h3>O que faríamos primeiro</h3>
+            <p class="sub" id="packHint">Recorte alinhado à sua faixa e à dor que você marcou.</p>
+            <div class="res-card">
+              <img id="resultImg" alt="" onerror="this.style.background='#F7F7F7'" />
+              <div class="body">
+                <span class="tag" id="resultTag">Eixo visual</span>
+                <strong id="resultTitle">Clean que vende</strong>
+                <p id="resultText" style="color:var(--mute);margin-top:6px;font-size:14px"></p>
+              </div>
+            </div>
+            <div class="moves" id="resultMoves"></div>
+            <div class="packs" id="resultPacks"></div>
+            <a class="whatsapp wa-link" target="_blank" rel="noopener">Agendar Orçamento no WhatsApp</a>
+          </div>
+          <div class="res-block proof">
+            <h3>Quem já redesenhou o anúncio</h3>
+            <p class="sub">Prova no perfil parecido com o seu.</p>
+            <div class="quotes" id="resultQuotes"></div>
+            <button class="redo" type="button" onclick="restart()">Refazer o quiz</button>
+          </div>
+        </section>
+      </div>
+      <footer id="dock"></footer>
+    </main>
+  </div>
+
+  <script>
+    const STUDIO = { name: "Forma Stay", whatsapp: "5511999999999" };
+    const TOTAL = 7;
+    const map = { intro:0, s1:1, s2:2, s3:3, s4:4, s5:5, s6:6, result:7 };
+    const ICO = {
+      one: `<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>`,
+      few: `<svg viewBox="0 0 24 24"><rect x="3" y="8" width="8" height="12"/><rect x="13" y="4" width="8" height="16"/></svg>`,
+      many: `<svg viewBox="0 0 24 24"><rect x="3" y="10" width="5" height="10"/><rect x="10" y="6" width="5" height="14"/><rect x="17" y="3" width="5" height="17"/></svg>`,
+      price: `<svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M17 8a3.5 3.5 0 0 0-3.5-2H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7"/></svg>`,
+      cal: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`,
+      star: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 6.2L21 10l-4.8 4.2L17.5 21 12 17.8 6.5 21l1.3-6.8L3 10l6.4-.8z"/></svg>`,
+      newu: `<svg viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>`,
+      refresh: `<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.2-5.5"/><path d="M20 5v5h-5"/></svg>`,
+      apto: `<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-3h4v3"/></svg>`,
+      studio: `<svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="1"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>`,
+      casa: `<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>`,
+      loft: `<svg viewBox="0 0 24 24"><path d="M3 20V8l9-4 9 4v12"/><path d="M3 12h18"/></svg>`,
+      photo: `<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M3 17l5-4 4 3 3-2 6 3"/></svg>`,
+      id: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>`,
+      home: `<svg viewBox="0 0 24 24"><path d="M4 12h16M8 12v8M16 12v8M4 20h16"/></svg>`,
+      wear: `<svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l6-4 6 4v11"/></svg>`,
+      storage: `<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 10h16M10 10v10"/></svg>`,
+      bath: `<svg viewBox="0 0 24 24"><path d="M4 13h16v3a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M6 13V8a2 2 0 0 1 2-2h1"/></svg>`,
+      quiet: `<svg viewBox="0 0 24 24"><path d="M11 6L6 10H3v4h3l5 4z"/><path d="M15 9l5 6M20 9l-5 6"/></svg>`
+    };
+
+    const qtys = [
+      { id:"one", label:"1 unidade", desc:"Foco total neste anúncio" },
+      { id:"few", label:"2 a 4 unidades", desc:"Padrão que se repete" },
+      { id:"many", label:"5 ou mais", desc:"Marca de hospedagem" }
+    ];
+    const goals = [
+      { id:"diaria", label:"Subir a diária", desc:"Justificar um preço melhor na foto" },
+      { id:"ocupacao", label:"Encher o calendário", desc:"Mais reservas, menos janela vazia" },
+      { id:"review", label:"Reviews melhores", desc:"O que o hóspede comenta no check-out" },
+      { id:"estreia", label:"Estrear um imóvel novo", desc:"Anúncio que já nasce competitivo" },
+      { id:"renovar", label:"Renovar um anúncio cansado", desc:"Tirou foto há anos e parou no tempo" }
+    ];
+    const types = [
+      { id:"studio", label:"Studio / quitinete", desc:"Tudo integrado" },
+      { id:"apto", label:"Apartamento", desc:"Planta urbana" },
+      { id:"casa", label:"Casa / sobrado", desc:"Mais área e autonomia" },
+      { id:"loft", label:"Loft", desc:"Pé-direito e integração" }
+    ];
+    const pains = [
+      { id:"foto", label:"A foto não vende", desc:"Capa fraca na busca" },
+      { id:"identidade", label:"Pouca identidade", desc:"Parece qualquer anúncio" },
+      { id:"morar", label:"Parece casa de morar", desc:"Pessoal demais para hóspede" },
+      { id:"desgaste", label:"Desgaste e manutenção", desc:"Peças que não aguentam giro" },
+      { id:"guarda", label:"Pouco lugar de guarda", desc:"Mala, roupa de cama, amenities" },
+      { id:"banho", label:"Banheiro ou cozinha fracos", desc:"Onde o review costuma cair" },
+      { id:"ruido", label:"Privacidade / ruído", desc:"Layout que não isola o hóspede" }
+    ];
+    function pex(id){ return "https://images.pexels.com/photos/"+id+"/pexels-photo-"+id+".jpeg?auto=compress&cs=tinysrgb&w=900"; }
+    const looks = [
+      { id:"clean", name:"Clean que vende", tag:"Claro, ordenado, comercial", img:pex(271624), local:"quiz-img/contemporaneo.jpg", text:"Linha limpa, cama protagonista, pouco ruído visual. As fotos leem em um segundo." },
+      { id:"acolhedor", name:"Acolhedor / hygge", tag:"Textura e luz quente", img:pex(1571460), local:"quiz-img/escandinavo.jpg", text:"Madeira clara, tecidos e luminária baixa. Converte quem busca ‘se sentir em casa’." },
+      { id:"urbano", name:"Urbano / industrial", tag:"Concreto, metal, contraste", img:pex(6044810), local:"quiz-img/industrial.jpg", text:"Bom em bairro denso. Foto com caráter — sem parecer obra inacabada." },
+      { id:"praia", name:"Praia / mediterrâneo", tag:"Cal, cerâmica, sol", img:pex(2507010), local:"quiz-img/mediterraneo.jpg", text:"Paleta de férias. Funciona em litoral e em apês que querem clima de verão." },
+      { id:"boutique", name:"Boutique / autoral", tag:"Peça-assinatura e cor", img:pex(1643383), local:"quiz-img/ecletico.jpg", text:"Uma ideia forte nas fotos. Cuidado para não virar cenário que não opera." },
+      { id:"japandi", name:"Japandi sereno", tag:"Vazio útil e artesanal", img:pex(1457842), local:"quiz-img/japandi.jpg", text:"Menos móveis, mais silêncio. Excelente em studio pequeno." }
+    ];
+
+    const state = {
+      qty: null, goal: null, type: null, sizeM2: 42, sizeUnknown: false,
+      pains: [], budget: 20000, budgetUnknown: false, look: null
+    };
+
+    function brl(n){
+      return "R$ " + Number(n).toLocaleString("pt-BR");
+    }
+    function budgetBand(n){
+      if(state.budgetUnknown) return "Faixa a definir na conversa";
+      if(n <= 8000) return "Decoração e styling para foto";
+      if(n <= 25000) return "Styling + peças-chave";
+      if(n <= 60000) return "Projeto pontual · 1–2 ambientes";
+      if(n <= 150000) return "Reforma da unidade / projeto completo";
+      return "Unidade vitrine";
+    }
+    function sizeLabel(){
+      return state.sizeUnknown ? "m² a confirmar" : (state.sizeM2 || "—") + " m²";
+    }
+
+    function card(id, label, desc, ico, onclick){
+      return `<button type="button" class="card" data-id="${id}" onclick="${onclick}">
+        <span class="swatch"><span class="ico">${ico||""}</span><span><strong>${label}</strong><span class="desc">${desc}</span></span></span>
+      </button>`;
+    }
+    function render(){
+      document.getElementById("qtyGrid").innerHTML = qtys.map(q => card(q.id,q.label,q.desc,ICO[q.id],`pick('qty','${q.id}','next1')`)).join("");
+      document.getElementById("goalGrid").innerHTML = goals.map(g => card(g.id,g.label,g.desc,ICO[{diaria:"price",ocupacao:"cal",review:"star",estreia:"newu",renovar:"refresh"}[g.id]],`pick('goal','${g.id}','next2')`)).join("");
+      document.getElementById("typeGrid").innerHTML = types.map(t => card(t.id,t.label,t.desc,ICO[t.id],`pick('type','${t.id}','next3')`)).join("");
+      document.getElementById("painGrid").innerHTML = pains.map(p => card(p.id,p.label,p.desc,ICO[{foto:"photo",identidade:"id",morar:"home",desgaste:"wear",guarda:"storage",banho:"bath",ruido:"quiet"}[p.id]],`togglePain('${p.id}')`)).join("");
+      document.getElementById("styleGrid").innerHTML = looks.map(s =>
+        `<figure class="style" data-id="${s.id}" onclick="pickLook('${s.id}')"><span class="tick">✓</span>
+          <img src="${s.img}" alt="${s.name}" onerror="this.onerror=null;this.src='${s.local}'" />
+          <figcaption><strong>${s.name}</strong><br><em>${s.tag}</em></figcaption>
+        </figure>`).join("");
+    }
+
+    function sel(scope, id){
+      document.querySelectorAll(scope + " .card, " + scope + " .style").forEach(el => el.classList.toggle("selected", el.dataset.id === id));
+    }
+    function on(id){ const b=document.getElementById(id); if(b) b.disabled=false; }
+    function pick(key, id, next){
+      state[key] = id;
+      const mapEl = { qty:"#qtyGrid", goal:"#goalGrid", type:"#typeGrid" };
+      sel(mapEl[key], id);
+      on(next);
+    }
+    function togglePain(id){
+      const i = state.pains.indexOf(id);
+      if(i >= 0) state.pains.splice(i,1);
+      else if(state.pains.length < 2) state.pains.push(id);
+      document.querySelectorAll("#painGrid .card").forEach(el => el.classList.toggle("selected", state.pains.includes(el.dataset.id)));
+      document.getElementById("next4").disabled = state.pains.length === 0;
+    }
+    function pickLook(id){
+      state.look = id;
+      sel("#styleGrid", id);
+      on("next6");
+    }
+    function onBudget(v){
+      state.budget = Number(v);
+      document.getElementById("budgetVal").textContent = brl(state.budget);
+      document.getElementById("budgetBand").textContent = budgetBand(state.budget);
+    }
+    function onBudgetUnknown(el){
+      state.budgetUnknown = el.checked;
+      const r = document.getElementById("budgetRange");
+      r.disabled = el.checked;
+      document.getElementById("budgetVal").textContent = el.checked ? "A definir" : brl(state.budget);
+      document.getElementById("budgetBand").textContent = budgetBand(state.budget);
+    }
+    function onSize(){
+      state.sizeM2 = Number(document.getElementById("sizeM2").value || 0);
+    }
+    function onSizeUnknown(el){
+      state.sizeUnknown = el.checked;
+      const inp = document.getElementById("sizeM2");
+      inp.disabled = el.checked;
+    }
+
+    function syncDock(id){
+      const dock = document.getElementById("dock");
+      const prev = dock.querySelector(".actions");
+      if(prev){
+        const home = document.querySelector('.screen[data-screen="'+(dock.dataset.from||"")+'"]');
+        if(home) home.appendChild(prev);
+      }
+      if(id === "intro" || id === "result"){ dock.dataset.from = ""; return; }
+      const screen = document.querySelector('.screen[data-screen="'+id+'"]');
+      const actions = screen && screen.querySelector(".actions");
+      if(actions){ dock.appendChild(actions); dock.dataset.from = id; }
+    }
+    function syncHead(id){
+      const s = document.querySelector('.screen[data-screen="'+id+'"]');
+      if(!s) return;
+      const h = s.querySelector("h2");
+      const hint = s.querySelector(".hint");
+      if(h) document.getElementById("liveTitle").textContent = h.textContent;
+      if(hint) document.getElementById("liveHint").textContent = hint.textContent;
+    }
+    function go(id){
+      document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.dataset.screen === id));
+      document.body.classList.toggle("on-intro", id === "intro");
+      document.body.classList.toggle("on-result", id === "result");
+      syncDock(id);
+      const n = map[id] || 0;
+      document.getElementById("barFill").style.width = (n / TOTAL * 100) + "%";
+      document.getElementById("stepCount").textContent = (id === "intro" ? "0" : n) + " / " + TOTAL;
+      if(id !== "intro" && id !== "result") syncHead(id);
+      document.querySelector(".stage").scrollTop = 0;
+    }
+
+    function firstMove(){
+      const p = state.pains[0];
+      const mapP = {
+        foto: "Fotos: cama feita + uma luz lateral. Tudo que disputa com a cama sai da primeira imagem.",
+        identidade: "Uma peça-assinatura visível nas fotos — cabeceira, tapete ou luminária. O resto fica quieto.",
+        morar: "Tirar o ‘dono da casa’: nicho pessoal, excesso de quadro, cromia sem critério.",
+        desgaste: "Trocar o que gira: roupa de cama, torneira, puxador, cadeira da mesa.",
+        guarda: "Marcenaria baixa para mala e roupa de cama. Operação some da foto.",
+        banho: "Banheiro e/ou cozinha primeiro. É onde o review desaba.",
+        ruido: "Layout e tecido: isolar a cama da área social sem obra pesada, se o m² deixar."
+      };
+      return mapP[p] || "Começar pelas fotos e pelo ambiente que o hóspede usa na chegada.";
+    }
+    function secondMove(){
+      const look = looks.find(l => l.id === state.look);
+      return look ? ("Eixo visual: " + look.name + " — " + look.tag + ".") : "Definir o eixo visual na conversa.";
+    }
+    function thirdMove(){
+      if(state.budgetUnknown) return "Investimento em aberto: na conversa separamos styling de obra.";
+      if(state.budget <= 8000) return "Com este valor, o projeto é styling e foto — sem obra estrutural.";
+      if(state.budget <= 25000) return "Dá para resolver fotos + 1 ambiente-chave (cama ou banheiro).";
+      if(state.budget <= 60000) return "Projeto pontual: 1–2 ambientes e marcenaria leve de operação.";
+      return "Unidade completa: acabamento, marcenaria e foto de lançamento.";
+    }
+
+    function packId(){
+      if(state.budgetUnknown) return "pontual";
+      if(state.budget <= 8000) return "styling";
+      if(state.budget <= 25000) return "styling";
+      if(state.budget <= 60000) return "pontual";
+      return "completo";
+    }
+    function headlineFor(){
+      const type = types.find(t => t.id === state.type)?.label || "imóvel";
+      const size = state.sizeUnknown ? type : type + " de " + sizeLabel();
+      const mapH = {
+        diaria: "Seu " + size + " consegue justificar uma diária melhor — começando pelas fotos.",
+        ocupacao: "O anúncio do seu " + size + " está perdendo clique. O recorte é foto + 1 ambiente.",
+        review: "Hóspede comenta banheiro e cama. É aí que o projeto do seu " + size + " começa.",
+        estreia: "Unidade nova: o " + size + " já pode estrear no eixo visual que você escolheu.",
+        renovar: "O anúncio cansou. No " + size + ", troca o que a busca vê primeiro."
+      };
+      return mapH[state.goal] || "Seu Airbnb rende mais com projeto de interiores.";
+    }
+    let holdTimer = null, holdLeft = 600;
+    function tickHold(){
+      const el = document.getElementById("holdClock");
+      if(!el) return;
+      if(holdLeft <= 0){ el.textContent = "00:00"; if(holdTimer) clearInterval(holdTimer); return; }
+      const m = String(Math.floor(holdLeft / 60)).padStart(2,"0");
+      const s = String(holdLeft % 60).padStart(2,"0");
+      el.textContent = m + ":" + s;
+      holdLeft -= 1;
+    }
+    function startHold(){
+      holdLeft = 600;
+      if(holdTimer) clearInterval(holdTimer);
+      tickHold();
+      holdTimer = setInterval(tickHold, 1000);
+    }
+    function showResult(){
+      const look = looks.find(l => l.id === state.look) || looks[0];
+      const qty = qtys.find(q => q.id === state.qty);
+      const goal = goals.find(g => g.id === state.goal);
+      const type = types.find(t => t.id === state.type);
+      const painLabels = state.pains.map(id => pains.find(p => p.id === id)?.label).filter(Boolean);
+      const budgetTxt = state.budgetUnknown ? "A definir" : brl(state.budget);
+      const pack = packId();
+
+      document.getElementById("resultHeadline").textContent = headlineFor();
+      document.getElementById("resultLead").textContent = state.budgetUnknown
+        ? "Comparativo na plataforma e recorte do projeto. A faixa de investimento fica para a conversa."
+        : "Comparativo na plataforma. Com cerca de " + budgetTxt + ", o caminho é " + budgetBand(state.budget).toLowerCase() + ".";
+
+      document.getElementById("resultImg").src = look.img;
+      const after = document.getElementById("compareAfter");
+      if(after) after.src = look.img;
+      document.getElementById("resultTitle").textContent = look.name;
+      document.getElementById("resultTag").textContent = look.tag;
+      document.getElementById("resultText").textContent = look.text;
+      document.getElementById("resultMoves").innerHTML = [
+        firstMove(), secondMove(), thirdMove()
+      ].map((t,i) => `<div><b>${i+1}</b><span>${t}</span></div>`).join("");
+
+      const packs = [
+        { id:"styling", lbl:"Cabe na sua faixa", title:"Styling para foto", text:"Fotos, cama, peças-chave e ensaio. Sem obra estrutural." },
+        { id:"pontual", lbl:"Cabe na sua faixa", title:"Projeto pontual", text:"1–2 ambientes + marcenaria leve de operação." },
+        { id:"completo", lbl:"Cabe na sua faixa", title:"Unidade completa", text:"Acabamento, guarda, foto de lançamento." }
+      ];
+      document.getElementById("resultPacks").innerHTML = packs.map(p =>
+        `<article class="pack${p.id===pack?" on":""}">${p.id===pack?'<div class="lbl">Recomendado para a sua faixa</div>':""}<b>${p.title}</b><p>${p.text}</p></article>`
+      ).join("");
+      document.getElementById("packHint").textContent = "Prioridade: " + (painLabels.join(" · ") || "fotos") + " · " + (look.name) + ".";
+
+      const quotes = [
+        { fit: q => q === "studio" || state.pains.includes("foto"), p:"As fotos deixaram de parecer casa de morar. No mês seguinte deu para testar um preço novo e a ocupação aumentou!", name:"Camila R.", meta:"Studio 36 m² · Vila Madalena", photo:"https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=120" },
+        { fit: q => state.pains.includes("banho") || state.goal === "review", p:"Resolveram banheiro e cama — exatamente o que o hóspede comentava. Manutenção simples mas que trouxe muito resultado.", name:"Pedro N.", meta:"Apto 68 m² · Pinheiros", photo:"https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=120" },
+        { fit: q => state.qty === "few" || state.qty === "many", p:"Tinha 3 anúncios parecendo casa de morar. Com o mesmo padrão de projeto, as fotos ficaram consistentes e os três passaram a justificar uma diária melhor.", name:"Ana L.", meta:"3 unidades · Consolação", photo:"https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=120" },
+        { fit: q => true, p:"Casa antiga, medo de perder o caráter. Equilibraram o visual de anúncio com o que a família usa no dia a dia.", name:"Helena P.", meta:"Sobrado · Vila Madalena", photo:"https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=120" }
+      ];
+      const picked = quotes.filter(q => q.fit(state.type)).slice(0,2);
+      document.getElementById("resultQuotes").innerHTML = picked.map(q =>
+        `<article class="quote"><div class="mark">“</div><p>${q.p}</p><div class="who"><img src="${q.photo}" alt="" /><div><b>${q.name}</b><span>${q.meta}</span><div class="stars">★★★★★ 4.9 no anúncio</div></div></div></article>`
+      ).join("");
+
+      const msg = encodeURIComponent(
+        `Olá! Fiz o quiz da ${STUDIO.name}.\n` +
+        `Quero orçamento para ${type?.label || "unidade"} (${sizeLabel()}), objetivo: ${goal?.label || "—"}.\n` +
+        `Visual: ${look.name}. Prioridade: ${painLabels.join(", ") || "fotos"}.\n` +
+        `Faixa: ${budgetTxt}.`
+      );
+      document.querySelectorAll(".wa-link").forEach(a => { a.href = `https://wa.me/${STUDIO.whatsapp}?text=${msg}`; });
+      startHold();
+      try {
+        const all = JSON.parse(localStorage.getItem("forma_stay_leads") || "[]");
+        all.push({ qty: state.qty, goal: state.goal, type: state.type, size: sizeLabel(), pains: painLabels, budget: budgetTxt, look: look.name, at: Date.now() });
+        localStorage.setItem("forma_stay_leads", JSON.stringify(all));
+      } catch(ex){}
+      go("result");
+    }
+
+    function restart(){
+      if(holdTimer) clearInterval(holdTimer);
+      holdLeft = 600;
+      const clock = document.getElementById("holdClock");
+      if(clock) clock.textContent = "10:00";
+      state.qty = state.goal = state.type = state.look = null;
+      state.pains = [];
+      state.sizeM2 = 42; state.sizeUnknown = false;
+      state.budget = 20000; state.budgetUnknown = false;
+      document.getElementById("sizeM2").value = 42;
+      document.getElementById("sizeM2").disabled = false;
+      document.getElementById("sizeUnknown").checked = false;
+      document.getElementById("budgetRange").value = 20000;
+      document.getElementById("budgetRange").disabled = false;
+      document.getElementById("budgetUnknown").checked = false;
+      onBudget(20000);
+      document.querySelectorAll(".selected").forEach(el => el.classList.remove("selected"));
+      ["next1","next2","next3","next4","next6"].forEach(id => { const b=document.getElementById(id); if(b) b.disabled = true; });
+      go("s1");
+    }
+
+    render();
+    onBudget(20000);
+    go("s1");
+    window.pick = pick;
+    window.togglePain = togglePain;
+    window.pickLook = pickLook;
+    window.onBudget = onBudget;
+    window.onBudgetUnknown = onBudgetUnknown;
+    window.onSize = onSize;
+    window.onSizeUnknown = onSizeUnknown;
+    window.go = go;
+    window.showResult = showResult;
+    window.restart = restart;
+  </script>
+</body>
+</html>
