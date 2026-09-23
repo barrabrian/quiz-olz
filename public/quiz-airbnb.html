@@ -808,5 +808,59 @@
     window.showResult = showResult;
     window.restart = restart;
   </script>
+  <script>
+  (function(){
+    var KEY = "fs_quiz_sid";
+    var sid = sessionStorage.getItem(KEY);
+    if(!sid){ sid = (Date.now().toString(36) + Math.random().toString(36).slice(2,10)); sessionStorage.setItem(KEY, sid); }
+    var startedAt = Date.now();
+    function send(event, step, payload){
+      try {
+        var body = JSON.stringify({ session_id: sid, event: event, step: step || null, payload: payload || {} });
+        if(navigator.sendBeacon){
+          navigator.sendBeacon("/api/public/quiz-event", new Blob([body], { type: "application/json" }));
+        } else {
+          fetch("/api/public/quiz-event", { method:"POST", headers:{"Content-Type":"application/json"}, body: body, keepalive: true });
+        }
+      } catch(e){}
+    }
+    function snapshot(){
+      try {
+        return {
+          qty: state.qty, goal: state.goal, type: state.type,
+          sizeM2: state.sizeUnknown ? null : state.sizeM2,
+          pains: state.pains.slice(),
+          budget: state.budgetUnknown ? null : state.budget,
+          look: state.look,
+          seconds: Math.round((Date.now() - startedAt)/1000)
+        };
+      } catch(e){ return {}; }
+    }
+    send("quiz_view", "intro", { ref: document.referrer || null });
+
+    var origGo = window.go;
+    window.go = function(id){
+      origGo(id);
+      send("step_view", id, snapshot());
+      if(id === "s1") send("quiz_start", "s1", {});
+    };
+    var origShow = window.showResult;
+    if(origShow){
+      window.showResult = function(){
+        origShow();
+        send("quiz_complete", "result", snapshot());
+      };
+    }
+    var origRestart = window.restart;
+    if(origRestart){
+      window.restart = function(){ origRestart(); send("quiz_restart", "intro", {}); };
+    }
+    document.addEventListener("click", function(ev){
+      var a = ev.target && ev.target.closest && ev.target.closest(".wa-link");
+      if(a) send("whatsapp_click", "result", snapshot());
+    }, true);
+    window.addEventListener("pagehide", function(){ send("quiz_exit", null, snapshot()); });
+  })();
+  </script>
 </body>
 </html>
