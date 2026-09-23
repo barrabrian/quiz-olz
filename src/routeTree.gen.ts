@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as QuizAirbnbRouteImport } from './routes/quiz-airbnb'
 import { Route as ApiPublicQuizEventRouteImport } from './routes/api/public/quiz-event'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuizAirbnbRoute = QuizAirbnbRouteImport.update({
@@ -31,30 +37,35 @@ const ApiPublicQuizEventRoute = ApiPublicQuizEventRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/quiz-airbnb': typeof QuizAirbnbRoute
   '/api/public/quiz-event': typeof ApiPublicQuizEventRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/quiz-airbnb': typeof QuizAirbnbRoute
   '/api/public/quiz-event': typeof ApiPublicQuizEventRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/quiz-airbnb': typeof QuizAirbnbRoute
   '/api/public/quiz-event': typeof ApiPublicQuizEventRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/quiz-airbnb' | '/api/public/quiz-event'
+  fullPaths: '/' | '/dashboard' | '/quiz-airbnb' | '/api/public/quiz-event'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/quiz-airbnb' | '/api/public/quiz-event'
-  id: '__root__' | '/' | '/quiz-airbnb' | '/api/public/quiz-event'
+  to: '/' | '/dashboard' | '/quiz-airbnb' | '/api/public/quiz-event'
+  id:
+    '__root__' | '/' | '/dashboard' | '/quiz-airbnb' | '/api/public/quiz-event'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   QuizAirbnbRoute: typeof QuizAirbnbRoute
   ApiPublicQuizEventRoute: typeof ApiPublicQuizEventRoute
 }
@@ -66,6 +77,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz-airbnb': {
@@ -87,6 +105,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   QuizAirbnbRoute: QuizAirbnbRoute,
   ApiPublicQuizEventRoute: ApiPublicQuizEventRoute,
 }
