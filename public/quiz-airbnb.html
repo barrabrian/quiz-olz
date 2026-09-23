@@ -837,12 +837,13 @@
       } catch(e){ return {}; }
     }
     send("quiz_view", "intro", { ref: document.referrer || null });
+    send("step_view", "s1", {});
 
     var origGo = window.go;
     window.go = function(id){
       origGo(id);
       send("step_view", id, snapshot());
-      if(id === "s1") send("quiz_start", "s1", {});
+      if(id === "s2") send("quiz_start", "s2", {});
     };
     var origShow = window.showResult;
     if(origShow){
