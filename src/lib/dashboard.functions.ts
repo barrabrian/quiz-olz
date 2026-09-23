@@ -150,7 +150,7 @@ export const getQuizAnalytics = createServerFn({ method: "GET" })
     }
 
     const answered = [...latest.values()].map((e) => e.payload as Record<string, unknown>);
-    const completedSnapshots = events
+    const completedSnapshots: Record<string, unknown>[] = events
       .filter((e) => e.event === "quiz_complete")
       .map((e) => ({ at: e.created_at, ...(e.payload as Record<string, unknown>) }));
 
